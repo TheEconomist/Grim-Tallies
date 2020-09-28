@@ -11,7 +11,7 @@ data is contained in the folder “source-data”.
 ### Excess mortality
 
 Our excess mortality data and code is available in [this
-repo.](https://github.com/TheEconomist/covid-19-excess-deaths-tracker).
+repo.](https://github.com/TheEconomist/covid-19-excess-deaths-tracker)
 
 ### SEIR models
 

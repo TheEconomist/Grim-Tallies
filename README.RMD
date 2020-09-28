@@ -10,7 +10,7 @@ This repository provides data and code for the briefing "Grim Tallies".
 Our scripts are written in R and available in the folder "scripts". Our data is contained in the folder "source-data".
 
 ### Excess mortality
-Our excess mortality data and code is available in [this repo.](https://github.com/TheEconomist/covid-19-excess-deaths-tracker).
+Our excess mortality data and code is available in [this repo.](https://github.com/TheEconomist/covid-19-excess-deaths-tracker)
 
 
 ### SEIR models
