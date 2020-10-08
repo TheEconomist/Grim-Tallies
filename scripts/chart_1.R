@@ -77,4 +77,52 @@ ggplot(prediction_df[!duplicated(prediction_df$date), ],
   scale_y_continuous(labels = scales::comma)+
   theme(legend.title = element_blank(), legend.position = "bottom")+xlab("")+ylab("")
 
-# To generate the large plot, take first-differences and group by continent or country. 
+# To generate the large plot, we first-differences and by continent and a select few large countries:
+
+# These lines define our groups (colors in the large plot)
+prediction_df$continents_plus <- prediction_df$continent
+prediction_df$continents_plus[prediction_df$country == "United States"] <- "United States"
+prediction_df$continents_plus[prediction_df$country == "China"] <- "China"
+prediction_df$continents_plus[prediction_df$country == "India"] <- "India"
+prediction_df$continents_plus[prediction_df$country == "Brazil"] <- "Brazil"
+
+# This function takes first differences by country and sums countries together by day and group: 
+big_chart_data <- function(prediction_df, grouping = "continent_plus"){
+  
+  prediction_df$region <- prediction_df[, grouping]
+  
+  regions <- prediction_df
+  
+  regions$region_cases <- ave(regions$cases, paste0(regions$date, "_", regions$region), FUN = sum)
+  regions$pred_region_cases <- ave(regions$pred_cases, paste0(regions$date, "_", regions$region), FUN = sum)
+  regions$pred_region_cases_low <- ave(regions$pred_cases_low, paste0(regions$date, "_", regions$region), FUN = sum)
+  regions$pred_region_cases_high <- ave(regions$pred_cases_high, paste0(regions$date, "_", regions$region), FUN = sum)
+  
+  new_cases_fun <- function(x) {
+    x <- x - c(0, x)[1:length(x)]
+    x <- make_average(x, n = 10)
+    x }
+  regions <- regions[!duplicated(paste0(regions$date, "_", regions$region)), ]
+  
+  regions$pred_region_cases <- ave(regions$pred_region_cases, regions$region, FUN = function(x) make_average(x, n = 10))
+  regions$pred_region_cases_low <- ave(regions$pred_region_cases_low, regions$region, FUN = function(x) make_average(x, n = 10))
+  regions$pred_region_cases_high <- ave(regions$pred_region_cases_high, regions$region, FUN = function(x) make_average(x, n = 10))
+  
+  regions$new_cases <- ave(regions$region_cases, regions$region, FUN = new_cases_fun)
+  regions$new_pred_cases <- ave(regions$pred_region_cases, regions$region, FUN = new_cases_fun)
+  regions$new_pred_cases_high <- ave(regions$pred_region_cases_high, regions$region, FUN = new_cases_fun)
+  regions$new_pred_cases_low <- ave(regions$pred_region_cases_low, regions$region, FUN = new_cases_fun)
+  return(regions)}
+continents_plus <- big_chart_data(prediction_df, grouping = "continents_plus") # This runs the above function
+
+# This reproduces our first large plot:
+ggplot(continents_plus, 
+       aes(x=date, ymin = 0))+geom_area(aes(y=-new_pred_cases, fill = continents_plus), col = "white")+
+  theme_minimal()+geom_ribbon(aes(ymin = 0, ymax = -new_cases, fill = "Reported Cases"))+
+  #  geom_line(aes(y=new_pred_cases_high), col = "white")+
+  # geom_line(aes(y=new_pred_cases_low), col = "black")+
+  scale_y_continuous(labels = scales::comma)+ylab("")+
+  theme(legend.title = element_blank(), legend.position = "bottom")+xlab("")
+ggsave("plots/continents_plus_new_cases_stacked.png", width = 6, height = 6)
+
+# Notes: As we write and show through our confidence interval above, newer dates are less certain, as sero-surveys are only released some time after data is collected. The labels and order in which groups appear and other visual details were tweaked by our graphical designers. 
