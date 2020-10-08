@@ -123,6 +123,5 @@ ggplot(continents_plus,
   # geom_line(aes(y=new_pred_cases_low), col = "black")+
   scale_y_continuous(labels = scales::comma)+ylab("")+
   theme(legend.title = element_blank(), legend.position = "bottom")+xlab("")
-ggsave("plots/continents_plus_new_cases_stacked.png", width = 6, height = 6)
 
 # Notes: As we write and show through our confidence interval above, newer dates are less certain, as sero-surveys are only released some time after data is collected. The labels and order in which groups appear and other visual details were tweaked by our graphical designers. 
