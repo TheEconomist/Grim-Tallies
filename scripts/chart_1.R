@@ -22,8 +22,8 @@ sero <- read.csv("source-data/sero-surveys.csv")
 # GDP per capita is at the national level, case_ir and death_r are for the geographical units in which the serosurvey was conducted (national, province/state, region, or metropolitan level). In a few very rare instances, a sero-survey was conducted across a large geographical region within a country which could plausibly similar to the country average, e.g. Niger state in Nigeria, where no case or death data was available. In these instances, we used data from the national level instead. Smaller surveys (e.g. cities) which could not be matched to time-series data on cases and deaths were not used.
 
 ## Model seroprevalence through case and death data:
-lm_model <- lm(sero_ir ~  - 1 + log(case_ir)*log(death_r+10^-5)*log_gdp_ppp - log_gdp_ppp, 
-                       data = sero, weight = log(sample.size))
+lm_model <- glm(sero_ir ~ (log(case_ir) + log(death_r + 1e-7)) * log_gdp_ppp,
+                data = sero, family = binomial, weights = sample.size)
 
 # Notes:
 # The model assumes that seroprevalence is some multiple of case rates and death rates and their interaction, scaled by a proxy for testing capacity (log_gdp_per_capita). Furthermore, it assumes that as diagnosed deaths and cases rise as a share of population, they come to better reflect underlying cases and deaths (hence taking the natural logs of both). We weight observations by the log of sample size, so that larger serosurveys, which have less uncertainty, are more influential.
@@ -34,10 +34,9 @@ lm_model <- lm(sero_ir ~  - 1 + log(case_ir)*log(death_r+10^-5)*log_gdp_ppp - lo
 ## Predict infection rate from offical cases, deaths, scaled by testing capacity (gdp per capita)
 prediction_df <- read.csv("source-data/cases_deaths_gdp.csv")
 prediction_df$date <- as.Date(prediction_df$date)
-prediction_df$pred_ir <- predict(lm_model, newdata = prediction_df)
-prediction_df$pred_ir_low <- predict(lm_model, newdata = prediction_df, interval = "confidence")[, 2]
-prediction_df$pred_ir_high <- predict(lm_model, newdata = prediction_df, interval = "confidence")[, 3]
-
+prediction_df$pred_ir <- predict(lm_model, newdata = prediction_df, type = 'response')
+prediction_df$pred_ir_low <- qbinom(0.05, 1000, prediction_df$pred_ir)/1000
+prediction_df$pred_ir_high <- qbinom(0.95, 1000, prediction_df$pred_ir)/1000
 
 # We know cumulative infection rates have lower bound of zero and are strictly increasing, and use this to improve our predictions. We first use a 10-day average to avoid day-to-day variation driving changes.
 library(runner)
